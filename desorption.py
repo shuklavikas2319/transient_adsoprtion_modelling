@@ -38,7 +38,7 @@ R_p = 1.7e-4 # m, radius of pore of adsorbent
 F_o = 15 # fourier number
 alpha = 0.9 # adsorptivity coefficient
 A = (50*58/10000) # m^2, surface area of glass cover (50cm x 58cm)
-U = 8 # W/m2K, overall heat transfer coefficient between adsorber bed and ambient
+U = 4 # W/m2K, overall heat transfer coefficient between adsorber bed and ambient
 T_ambient = 318.15 # K, ambient temperature
 l = 58/100 # m, length of the adsorber bed
 b = 50/100 # M , breadth of the adsorber bed
@@ -66,10 +66,26 @@ solution = solve_ivp(eqns, t_span, initial_conditions, t_eval=t_eval , method='R
 # Extract results
 T_solution = solution.y[0]  # Temperature over time
 w_solution = solution.y[1]  # Uptake over time
+time_hours = solution.t / 3600
 w_star_solution = []
 
 for T in T_solution:
     w_star_solution.append(equilibrium_uptake(T))
+
+T_max = np.max(T_solution)
+T_max_index = np.argmax(T_solution)
+
+time_T_max = time_hours[T_max_index]
+
+print(f"Maximum bed temperature = {T_max - 273.15:.2f} °C")
+print(f"Occurs at t = {time_T_max:.2f} hours")
+
+w_min = np.min(w_solution)
+w_min_index = np.argmin(w_solution)
+time_w_min = time_hours[w_min_index]
+
+print(f"Minimum uptake = {w_min:.4f} kg/kg")
+print(f"Occurs at t = {time_w_min:.2f} hours")
 # Plotting results
 plt.figure(figsize=(12, 6))
 
