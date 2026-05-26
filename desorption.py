@@ -19,6 +19,7 @@ def equilibrium_uptake(T_bed):
     w_star = min(w_star, w_0)
 
     return w_star
+
 def ambient_temperature(t):
 
    return 308 + 10*np.sin(np.pi*(t)/(12*3600))  # Ambient temperature varies between 298 K (25°C) and 318 K (45°C) over the course of the day, peaking at around 2 PM (t=14)
@@ -77,34 +78,40 @@ T_max_index = np.argmax(T_solution)
 
 time_T_max = time_hours[T_max_index]
 
-print(f"Maximum bed temperature = {T_max - 273.15:.2f} °C")
-print(f"Occurs at t = {time_T_max:.2f} hours")
+
 
 w_min = np.min(w_solution)
 w_min_index = np.argmin(w_solution)
 time_w_min = time_hours[w_min_index]
+T# Export switching state variables
+T_switch = T_solution[w_min_index]
+w_switch = w_solution[w_min_index]
+t_switch = solution.t[w_min_index]
+if __name__ == "__main__":
+    print(f"Maximum bed temperature = {T_max - 273.15:.2f} °C")
+    print(f"Occurs at t = {time_T_max:.2f} hours")
+    print(f"Minimum uptake = {w_min:.4f} kg/kg")
+    print(f"Occurs at t = {time_w_min:.2f} hours")
+    print(f"Corresponding bed temperature at minimum uptake = {T_switch - 273.15:.2f} °C")
+    # Plotting results
+    plt.figure(figsize=(12, 6))
 
-print(f"Minimum uptake = {w_min:.4f} kg/kg")
-print(f"Occurs at t = {time_w_min:.2f} hours")
-# Plotting results
-plt.figure(figsize=(12, 6))
+    # Temperature subplot
+    plt.subplot(2, 1, 1)
+    plt.plot(solution.t / 3600, T_solution - 273.15, label='Temperature')
+    plt.xlabel('Time (hours)')
+    plt.ylabel('Temperature (°C)')
+    plt.title('Temperature of Adsorber Bed Over Time')
+    plt.legend()
 
-# Temperature subplot
-plt.subplot(2, 1, 1)
-plt.plot(solution.t / 3600, T_solution - 273.15, label='Temperature')
-plt.xlabel('Time (hours)')
-plt.ylabel('Temperature (°C)')
-plt.title('Temperature of Adsorber Bed Over Time')
-plt.legend()
+    # Uptake subplot
+    plt.subplot(2, 1, 2)
+    plt.plot(solution.t / 3600, w_solution, label='Actual uptake')
+    plt.plot(solution.t / 3600, w_star_solution, label='Equilibrium uptake')
+    plt.xlabel('Time (hours)')
+    plt.ylabel('Uptake (kg/kg)')
+    plt.title('Uptake of Adsorbent Over Time')
+    plt.legend()
 
-# Uptake subplot
-plt.subplot(2, 1, 2)
-plt.plot(solution.t / 3600, w_solution, label='Actual uptake')
-plt.plot(solution.t / 3600, w_star_solution, label='Equilibrium uptake')
-plt.xlabel('Time (hours)')
-plt.ylabel('Uptake (kg/kg)')
-plt.title('Uptake of Adsorbent Over Time')
-plt.legend()
-
-plt.tight_layout()
-plt.show()
+    plt.tight_layout()
+    plt.show()
