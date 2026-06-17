@@ -5,6 +5,7 @@ import matplotlib.pyplot as plt
 import sys
 sys.path.append(r'C:\Users\shukl\OneDrive\Desktop\python\adsorption\thermodynamics')
 from state_point_calculator import rootfind
+import isosteric_cooling as iso
 import desorption as des
 obj=rootfind()
 R_vapor = 461.5 # J/(kg*K), gas constant for DA
@@ -13,19 +14,17 @@ def equilibrium_uptake(T_bed):
 
     Ps_evap = PropsSI("P","T",obj.T_evap,"Q",1,"Water")
     Ps_bed  = PropsSI("P","T",T_bed,"Q",1,"Water")
-    w_0 = 0.3413 # kg/kg, maximum uptake at saturation
     w_star = 0.346 * (Ps_evap/Ps_bed)**(1/1.6)
-    w_star = min(w_star, w_0)
 
     return w_star
-T_init = des.ambient_temperature(1.34*3600)
+T_init = iso.ambient_temperature_night(iso.t_switchdes)
 T_night = 30 + 273.15  # choose consistent Kelvin
 tau = 5.5 * 3600
-def ambient_temperature_night(t):
+def ambient_temperature_nightp(t):
     return T_night + (T_init - T_night) * np.exp(-t / tau) # Ambient temperature varies between 298 K (25°C) and 318 K (45°C) over the course of the day, peaking at around 2 PM (t=14)
 
-m_b = des.m_b
-m_a = des.m_a
+m_b = iso.m_b
+m_a = iso.m_a
 
 # Parameters
 H_ads= 2.8e6  # J/kg, heat of adsorption
@@ -51,17 +50,17 @@ def eqns(t, vars):
     w = vars[1]
     w_star = equilibrium_uptake(T)
     dw_dt = (F_o*D_so/(R_p**2)*np.exp(-E_a/(R*T))*(w_star - w))
-    dT_dt = (m_a*H_ads*dw_dt -U*A_surf*(T-ambient_temperature_night(t)))/(m_b*Cp_b + m_a*(Cp_a + w*Cp_l)) 
+    dT_dt = (m_a*H_ads*dw_dt -U*A_surf*(T-ambient_temperature_nightp(t)))/(m_b*Cp_b + m_a*(Cp_a + w*Cp_l)) 
     return [dT_dt, dw_dt]
 # Initial conditions
-T0 = des.T_switch   # Initial temperature in Kelvin 
-w0 = des.w_switch     # Initial uptake (kg/kg)
+T0 = iso.T_switchdes   # Initial temperature in Kelvin 
+w0 = des.w_switchdes     # Initial uptake (kg/kg)
 initial_conditions = [T0, w0]
 # Time span for the simulation (0 to 12 hours)
-t_span = (0, 16.7*3600)  # seconds
+t_span = (iso.t_switchdes, 24*3600)  # seconds
 t_eval = np.linspace(t_span[0], t_span[1], 1000)
 # Solve the system of ODEs
-solution = solve_ivp(eqns, t_span, initial_conditions, t_eval=t_eval , method='Radau',rtol=1e-6, atol=1e-9)
+solution = solve_ivp(eqns, t_span, initial_conditions, t_eval=t_eval , method='BDF',rtol=1e-6, atol=1e-9)
 
 # Extract results
 T_solution = solution.y[0]  # Temperature over time
@@ -77,14 +76,16 @@ T_min_index = np.argmin(T_solution)
 
 time_T_min = time_hours[T_min_index]
 
-print(f"Minimum bed temperature = {T_min - 273.15:.2f} °C")
-print(f"Occurs at t = {time_T_min:.2f} hours")
+
 
 w_max = np.max(w_solution)
 w_max_index = np.argmax(w_solution)
 time_w_max = time_hours[w_max_index]
 
-print(f"Maximum uptake = {w_max:.4f} kg/kg")
+print(f"Minimum bed temperature = {T_min - 273.15:.2f} °C")
+print(f"Occurs at t = {time_T_min:.2f} hours")
+
+print(f"Maximump uptake = {w_max:.4f} kg/kg")
 print(f"Occurs at t = {time_w_max:.2f} hours")
 # Plotting results
 plt.figure(figsize=(12, 6))
